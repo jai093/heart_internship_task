@@ -247,10 +247,10 @@ with tab1:
         col_rf, col_lstm, col_cnn = st.columns(3)
         with col_rf:
             st.markdown(result_card(rf_pred, "Random Forest"), unsafe_allow_html=True)
-        with col_lstm:
-            st.markdown(result_card(lstm_pred, "LSTM", lstm_pred is not None), unsafe_allow_html=True)
-        with col_cnn:
-            st.markdown(result_card(cnn_pred, "CNN", cnn_pred is not None), unsafe_allow_html=True)
+        # with col_lstm:
+        #     st.markdown(result_card(lstm_pred, "LSTM", lstm_pred is not None), unsafe_allow_html=True)
+        # with col_cnn:
+        #     st.markdown(result_card(cnn_pred, "CNN", cnn_pred is not None), unsafe_allow_html=True)
 
         # Ensemble
         st.markdown("<br>", unsafe_allow_html=True)
