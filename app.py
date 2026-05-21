@@ -110,30 +110,15 @@ st.markdown("""
 @st.cache_resource
 def load_artifacts():
     rf = pickle.load(open("rf_model.pkl", "rb"))
-    lstm_model = lstm_scaler = cnn_model = cnn_scaler = None
-    try:
-        from tensorflow.keras.models import load_model
-        lstm_model = load_model("lstm_model.h5")
-        with open("lstm_scaler.pkl", "rb") as f:
-            lstm_scaler = pickle.load(f)
-    except Exception:
-        pass
-    try:
-        from tensorflow.keras.models import load_model
-        cnn_model = load_model("cnn_model.h5")
-        with open("cnn_scaler.pkl", "rb") as f:
-            cnn_scaler = pickle.load(f)
-    except Exception:
-        pass
-    return rf, lstm_model, lstm_scaler, cnn_model, cnn_scaler
+    return rf
 
-rf_model, lstm_model, lstm_scaler, cnn_model, cnn_scaler = load_artifacts()
+rf_model = load_artifacts()
 
 # ── Hero ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
   <h1>❤️ Heart Attack Risk Classifier</h1>
-  <p>Enter patient vitals below. Three ML models (Random Forest, LSTM, CNN) predict risk simultaneously.</p>
+  <p>Enter patient vitals below. A Random Forest model predicts risk.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -189,19 +174,6 @@ with tab1:
             df[["Age", "RestingBP", "Cholesterol", "MaxHR"]])
         return df
 
-    def encode_dl(Age, RestingBP, Cholesterol, FastingBS, MaxHR, Oldpeak,
-                  ExerciseAngina, gender, ChestPainType, RestingECG, ST_Slope, scaler):
-        row = np.array([[Age,
-                         {"M": 1, "F": 0}[gender],
-                         {"ATA": 0, "NAP": 2, "ASY": 1, "TA": 3}[ChestPainType],
-                         RestingBP, Cholesterol, FastingBS,
-                         {"LVH": 0, "Normal": 1, "ST": 2}[RestingECG],
-                         MaxHR,
-                         {"N": 0, "Y": 1}[ExerciseAngina],
-                         Oldpeak,
-                         {"Down": 0, "Flat": 1, "Up": 2}[ST_Slope]]], dtype=np.float32)
-        return scaler.transform(row)
-
     def result_card(pred, label, available=True):
         if not available:
             return f"""<div class="result-na">
@@ -230,36 +202,7 @@ with tab1:
             encode_rf(Age, RestingBP, Cholesterol, FastingBS, MaxHR, Oldpeak,
                       ExerciseAngina, gender, ChestPainType, RestingECG, ST_Slope))[0])
 
-        # LSTM
-        lstm_pred = None
-        if lstm_model and lstm_scaler:
-            x = encode_dl(Age, RestingBP, Cholesterol, FastingBS, MaxHR, Oldpeak,
-                          ExerciseAngina, gender, ChestPainType, RestingECG, ST_Slope, lstm_scaler)
-            lstm_pred = int(lstm_model.predict(x.reshape(1, 1, x.shape[1]), verbose=0)[0][0] >= 0.5)
-
-        # CNN
-        cnn_pred = None
-        if cnn_model and cnn_scaler:
-            x = encode_dl(Age, RestingBP, Cholesterol, FastingBS, MaxHR, Oldpeak,
-                          ExerciseAngina, gender, ChestPainType, RestingECG, ST_Slope, cnn_scaler)
-            cnn_pred = int(cnn_model.predict(x.reshape(1, x.shape[1], 1), verbose=0)[0][0] >= 0.5)
-
-        col_rf, col_lstm, col_cnn = st.columns(3)
-        with col_rf:
-            st.markdown(result_card(rf_pred, "Random Forest"), unsafe_allow_html=True)
-        with col_lstm:
-            st.markdown(result_card(lstm_pred, "LSTM", lstm_pred is not None), unsafe_allow_html=True)
-        with col_cnn:
-            st.markdown(result_card(cnn_pred, "CNN", cnn_pred is not None), unsafe_allow_html=True)
-
-        # Ensemble
-        st.markdown("<br>", unsafe_allow_html=True)
-        votes = [p for p in [rf_pred, lstm_pred, cnn_pred] if p is not None]
-        majority = int(sum(votes) > len(votes) / 2)
-        cls = "ensemble-high" if majority == 1 else "ensemble-low"
-        icon = "⚠️ High Risk of Heart Attack" if majority == 1 else "✅ Low Risk of Heart Attack"
-        st.markdown(f'<div class="{cls}">Ensemble Verdict &nbsp;|&nbsp; {icon}</div>',
-                    unsafe_allow_html=True)
+        st.markdown(result_card(rf_pred, "Random Forest"), unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 2 — ANALYTICS & INSIGHTS
